@@ -94,7 +94,7 @@
 
 ### 7. 成员 (USER)
 
-数组格式，需传 user_id。**user_id 不是姓名**，必须先通过 `wecomcli-contact` 技能查找目标人员的 `userid`，再填入此处。
+数组格式，需传 user_id。**user_id 不是姓名**，必须先通过 `wecom-contact` 查找目标人员的 `userid`，再填入此处。
 
 具体步骤：先
 ```bash

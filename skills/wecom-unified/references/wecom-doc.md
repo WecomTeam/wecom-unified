@@ -49,6 +49,7 @@ wecom-cli doc <tool_name> '<json_params>'
 | errcode | errmsg | 含义 | 处理方式 |
 |---------|--------|------|----------|
 | `851002` | `incompatible doc type` | 文档品类与所调用的接口不匹配 | 根据文档 URL 重新确认品类（参见上方「URL 品类识别与接口路由」表），然后使用该品类对应的正确接口重试 |
+| `851003` | `no authority` | 无权限调用该接口，**智能表格写入场景**下通常是企业可见范围 > 10 人的规模限制 | 若发生在 `smartsheet_add_records` / `smartsheet_update_records`，引导用户走 Webhook 兜底方案，详见 [wecom-doc-smartsheet-webhook.md](wecom-doc-smartsheet-webhook.md)；其他接口则按权限问题排查 |
 
 ---
 
@@ -260,6 +261,8 @@ wecom-cli doc smartsheet_add_records '{"docid": "DOCID", "sheet_id": "SHEETID", 
 
 各字段类型的值格式参见 [单元格值格式参考](wecom-doc-smartsheet-cell-value-formats.md)。
 
+> ⚠️ 若返回 `errcode: 851003` 或 `errmsg` 包含 `no authority`（通常是企业可见范围 > 10 人的规模限制），切换到 Webhook 兜底方案，详见 [wecom-doc-smartsheet-webhook.md](wecom-doc-smartsheet-webhook.md)。
+
 ### smartsheet_update_records
 
 更新一行或多行记录，单次建议在 500 行内。需提供 record_id（通过 `smartsheet_get_records` 获取）。支持通过 `key_type` 指定 values 的 key 使用字段标题或字段 ID：
@@ -272,6 +275,8 @@ wecom-cli doc smartsheet_update_records '{"docid": "DOCID", "sheet_id": "SHEETID
 ```
 
 **注意**：创建时间、最后编辑时间、创建人、最后编辑人字段不可更新。
+
+> ⚠️ 若返回 `errcode: 851003` 或 `errmsg` 包含 `no authority`（通常是企业可见范围 > 10 人的规模限制），切换到 Webhook 兜底方案，详见 [wecom-doc-smartsheet-webhook.md](wecom-doc-smartsheet-webhook.md)。注意 Webhook 只能更新通过 Webhook 写入的记录，人工创建的记录无法更新。
 
 ### smartsheet_delete_records
 
@@ -342,5 +347,6 @@ wecom-cli doc smartsheet_get_records '{"docid":"DOCID","sheet_id":"SHEETID"}'
 2. **写入数据** → 先 `smartsheet_get_fields` 了解列类型 → 若涉及成员（USER）字段，先通过通讯录的 `get_userlist` 查找人员 userid（参见 [wecom-contact.md](wecom-contact.md)） → `smartsheet_add_records` 写入
 3. **更新数据** → 先 `smartsheet_get_records` 获取 record_id → 若涉及成员（USER）字段，先通过通讯录的 `get_userlist` 查找人员 userid → `smartsheet_update_records` 更新
 4. **删除数据** → 先 `smartsheet_get_records` 确认 record_id → `smartsheet_delete_records` 删除
+5. **写入失败 fallback** → 第 2/3 步返回 `errcode: 851003` / `no authority`（通常是企业可见范围 > 10 人的规模限制）时 → 请用户临时提供目标表的 Webhook 地址 + schema 示例 JSON（不保存到本地）→ 按 [wecom-doc-smartsheet-webhook.md](wecom-doc-smartsheet-webhook.md) 构造请求体发送
 
 > **注意**：成员（USER）类型字段需要填写 `user_id`，不能直接使用姓名。必须先通过通讯录的 `get_userlist` 接口按姓名查找到对应的 `userid` 后再使用。

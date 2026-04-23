@@ -1,4 +1,4 @@
-# 企业微信会议技能
+# 企业微信会议
 
 > 公共概念与规则请参考 [wecom-shared.md](wecom-shared.md)
 

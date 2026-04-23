@@ -16,7 +16,7 @@ wecom-cli todo get_todo_list '{}'
 wecom-cli todo get_todo_detail '{"todo_id_list": ["返回的TODO_ID_1", "返回的TODO_ID_2"]}'
 ```
 
-3. **通过 wecomcli-contact 获取通讯录**，将 follower_id / creator_id 转为姓名：
+3. **通过 wecom-contact 获取通讯录**，将 follower_id / creator_id 转为姓名：
 ```bash
 wecom-cli contact get_userlist '{}'
 ```
@@ -68,7 +68,7 @@ wecom-cli todo get_todo_list '{"create_begin_time": "2025-03-01 00:00:00", "crea
 
 **步骤：**
 
-1. **通讯录查询**：通过 wecomcli-contact 技能查询张三的 userid，在返回结果中筛选姓名为"张三"的成员，获取其 userid。
+1. **通讯录查询**：通过 wecom-contact 查询张三的 userid，在返回结果中筛选姓名为"张三"的成员，获取其 userid。
 ```bash
 wecom-cli contact get_userlist '{}'
 ```
@@ -87,7 +87,7 @@ wecom-cli todo create_todo '{"content": "<待办的内容>", "follower_list": {"
 ⏰ 提醒时间：2025-03-24 09:00
 ```
 
-> `follower_id` 必须来自 `wecomcli-contact` 技能的 `get_userlist` 接口返回的 `userid`，禁止自行猜测。若搜索结果有多个同名人员，需展示候选列表让用户确认。
+> `follower_id` 必须来自 `wecom-contact` 的 `get_userlist` 接口返回的 `userid`，禁止自行猜测。若搜索结果有多个同名人员，需展示候选列表让用户确认。
 
 ---
 
