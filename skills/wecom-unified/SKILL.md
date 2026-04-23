@@ -19,7 +19,7 @@ wecom-cli --version
 如果命令不存在或报错，执行安装：
 
 ```bash
-npm install -g @wecom/cli
+npm install -g @wecom/cli@0.1.6
 ```
 
 ### Step 2: 检查凭证是否配置
