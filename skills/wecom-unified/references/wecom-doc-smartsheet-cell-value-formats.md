@@ -122,10 +122,10 @@ wecom-cli contact get_userlist '{}'
 
 ### 9. 图片 (IMAGE)
 
-数组格式：
+数组格式，支持传入本地路径：
 
 ```json
-"封面": [{"image_url": "https://example.com/img.png"}]
+"封面": [{"image_path": "/path/to/img.png"}]
 ```
 
 ### 10. 地理位置 (LOCATION)
@@ -135,6 +135,15 @@ wecom-cli contact get_userlist '{}'
 ```json
 "地点": [{"source_type": 1, "id": "地点ID", "latitude": "39.9", "longitude": "116.3", "title": "北京"}]
 ```
+
+### 11. 文件
+
+数组格式：
+
+```json
+"文件": [{"file_path": "/path/to/img.png"}]
+```
+
 
 ## 完整添加记录示例
 

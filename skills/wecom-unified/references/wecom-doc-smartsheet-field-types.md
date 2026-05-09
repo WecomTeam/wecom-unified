@@ -20,6 +20,7 @@
 | `FIELD_TYPE_CURRENCY` | 货币 | 货币金额 |
 | `FIELD_TYPE_PERCENTAGE` | 百分比 | 比率类数值（完成率、转化率） |
 | `FIELD_TYPE_BARCODE` | 条码 | 条形码/二维码 |
+| `FIELD_TYPE_ATTACHMENT` | 文件 | 文件/附件 |
 
 ## 添加字段示例
 

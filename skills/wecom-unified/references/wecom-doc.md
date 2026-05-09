@@ -249,7 +249,7 @@ wecom-cli doc smartsheet_get_records '{"url": "https://doc.weixin.qq.com/smartsh
 
 参见 [API 详情](wecom-doc-smartsheet-get-records.md)。
 
-### smartsheet_add_records
+### smartsheet_add_records 添加一行或多行记录(不带图片或文件)
 
 添加一行或多行记录，单次建议 500 行内。
 
@@ -263,7 +263,15 @@ wecom-cli doc smartsheet_add_records '{"docid": "DOCID", "sheet_id": "SHEETID", 
 
 > ⚠️ 若返回 `errcode: 851003` 或 `errmsg` 包含 `no authority`（通常是企业可见范围 > 10 人的规模限制），切换到 Webhook 兜底方案，详见 [wecom-doc-smartsheet-webhook.md](wecom-doc-smartsheet-webhook.md)。
 
-### smartsheet_update_records
+## +smartsheet_add_records_auto_file 添加一行或多行记录(带图片或文件)
+
+添加一行或多行记录，单次建议 500 行内。与 `smartsheet_add_records` 不同之处在于，可支持本地路径传入图片、文件。对于需要添加带图片或文件的记录，请使用此接口。传入后台后，后台将自动存储并转换为image_url。
+
+```bash
+wecom-cli doc +smartsheet_add_records_auto_file '{"docid":"DOCID","sheet_id":"SHEETID","records":[{"values":{"图片":[{"image_path":"/path/to/image.jpg"}],"文件":[{"file_path":"/path/to/file.txt"}]}}]}'
+```
+
+### smartsheet_update_records 更新记录(不带图片或文件)
 
 更新一行或多行记录，单次建议在 500 行内。需提供 record_id（通过 `smartsheet_get_records` 获取）。支持通过 `key_type` 指定 values 的 key 使用字段标题或字段 ID：
 
@@ -277,6 +285,13 @@ wecom-cli doc smartsheet_update_records '{"docid": "DOCID", "sheet_id": "SHEETID
 **注意**：创建时间、最后编辑时间、创建人、最后编辑人字段不可更新。
 
 > ⚠️ 若返回 `errcode: 851003` 或 `errmsg` 包含 `no authority`（通常是企业可见范围 > 10 人的规模限制），切换到 Webhook 兜底方案，详见 [wecom-doc-smartsheet-webhook.md](wecom-doc-smartsheet-webhook.md)。注意 Webhook 只能更新通过 Webhook 写入的记录，人工创建的记录无法更新。
+
+### +smartsheet_update_records_auto_file 更新记录(更新图片或文件字段)
+更新一行或多行记录，单次建议在 500 行内。与 `smartsheet_update_records` 不同之处在于，可支持本地路径传入图片、文件。对于需要更新记录中的图片或文件，请使用此接口。传入后台后，后台将自动存储并转换为image_url。
+
+```bash
+wecom-cli doc +smartsheet_update_records_auto_file '{"docid": "DOCID", "sheet_id": "SHEETID", "key_type": "CELL_VALUE_KEY_TYPE_FIELD_TITLE", "records": [{"record_id": "RECORDID", "values": {"values":{"图片":[{"image_path":"/path/to/image.jpg"}],"文件":[{"file_path":"/path/to/file.txt"}]}}}]}'
+```
 
 ### smartsheet_delete_records
 
