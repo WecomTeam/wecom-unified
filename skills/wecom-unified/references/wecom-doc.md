@@ -1,8 +1,8 @@
-# 企业微信文档、智能表格与智能文档管理
+# 企业微信文档、表格、智能表格与智能文档管理
 
 > 公共概念与规则请参考 [wecom-shared.md](wecom-shared.md)
 
-管理企业微信文档和智能文档（原名智能主页）的创建、读取和编辑，以及智能表格的结构（子表、字段/列）和数据（记录）管理。文档接口支持通过 `docid` 或 `url` 二选一定位文档。
+管理企业微信文档和智能文档（原名智能主页）的创建、读取和编辑，表格（在线表格）的读取以及智能表格的结构（子表、字段/列）和数据（记录）管理。文档接口支持通过 `docid` 或 `url` 二选一定位文档。
 
 > ⚠️ **重要触发规则**：只有当用户明确提到「**智能文档**」或「**智能主页**」时，才使用智能文档相关接口（`smartpage_*` 系列）。其他所有涉及「文档」的场景（如"创建文档"、"写个文档"、"帮我建个文档"等），一律使用企微文档接口（`create_doc` / `get_doc_content` / `edit_doc_content`）。
 
@@ -18,20 +18,22 @@ wecom-cli doc <tool_name> '<json_params>'
 
 ## URL 品类识别与接口路由
 
-企业微信文档有三种品类，**URL 格式不同，读取内容所用的接口也不同**，切勿混用：
+企业微信文档有四种品类，**URL 格式不同，读取内容所用的接口也不同**，切勿混用。其中**表格（在线表格）与智能表格是两类不同品类**，请通过 URL 严格区分：
 
 | URL 模式 | 品类 | 读取内容接口 |
 |---|---|---|
 | `https://doc.weixin.qq.com/doc/*` | **文档**（doc_type=3） | `get_doc_content` |
-| `https://doc.weixin.qq.com/smartsheet/*` | **智能表格**（doc_type=10） | `get_doc_content` |
+| `https://doc.weixin.qq.com/sheet/*` | **表格 / 在线表格** | `get_doc_content` |
+| `https://doc.weixin.qq.com/smartsheet/*` | **智能表格**（doc_type=10） | `smartsheet_get_sheet` → `smartsheet_get_records` |
 | `https://doc.weixin.qq.com/smartpage/*` | **智能文档**（原名智能主页） | `smartpage_export_task` → `smartpage_get_export_result` |
 
 **判断规则**：
 - URL 路径以 `/doc/*` 开头 → 文档 → 用 `get_doc_content`
-- URL 路径以 `/smartsheet/*` 开头 → 智能表格 → 用 `get_doc_content`
+- URL 路径以 `/sheet/*` 开头 → 表格（在线表格） → 用 `get_doc_content`
+- URL 路径以 `/smartsheet/*` 开头 → 智能表格 → 用 `smartsheet_get_sheet`
 - URL 路径以 `/smartpage/*` 开头 → 智能文档（原名智能主页） → 用 `smartpage_export_task`
 
----
+> ⚠️ **表格 ≠ 智能表格**：二者是不同品类（`/sheet/` vs `/smartsheet/`）。
 
 ## 返回格式说明
 
@@ -57,7 +59,9 @@ wecom-cli doc <tool_name> '<json_params>'
 
 ### get_doc_content
 
-获取文档完整内容数据，只能以 Markdown 格式返回。采用**异步轮询机制**：首次调用无需传 `task_id`，接口返回 `task_id`；若 `task_done` 为 false，需携带该 `task_id` 再次调用，直到 `task_done` 为 true 时返回完整内容。
+获取**文档 / 表格（在线表格） / 智能表格**的完整内容数据，统一以 Markdown 格式返回。采用**异步轮询机制**：首次调用无需传 `task_id`，接口返回 `task_id`；若 `task_done` 为 false，需携带该 `task_id` 再次调用，直到 `task_done` 为 true 时返回完整内容。
+
+> 适用 URL：`/doc/*`、`/sheet/*`、`/smartsheet/*`。`/smartpage/*`（智能文档）不适用，请改用 `smartpage_export_task`。
 
 - 首次调用（不传 task_id）：
 ```bash
@@ -67,12 +71,16 @@ wecom-cli doc get_doc_content '{"docid": "DOCID", "type": 2}'
 ```bash
 wecom-cli doc get_doc_content '{"docid": "DOCID", "type": 2, "task_id": "xxx"}'
 ```
-- 或通过 URL：
+- 通过 URL 读取文档：
 ```bash
 wecom-cli doc get_doc_content '{"url": "https://doc.weixin.qq.com/doc/xxx", "type": 2}'
 ```
+- 通过 URL 读取表格（在线表格）：
+```bash
+wecom-cli doc get_doc_content '{"url": "https://doc.weixin.qq.com/sheet/xxx", "type": 2}'
+```
 
-参见 [API 详情](wecom-doc-get-doc-content.md)。
+参见 [API 详情](wecom-doc-get-doc-content.md)
 
 ### create_doc
 
@@ -87,7 +95,9 @@ wecom-cli doc create_doc '{"doc_type": 3, "doc_name": "项目周报"}'
 wecom-cli doc create_doc '{"doc_type": 10, "doc_name": "任务跟踪表"}'
 ```
 
-**注意**：docid 仅在创建时返回，需妥善保存。创建智能表格时默认包含一个子表，可通过 `smartsheet_get_sheet` 查询其 sheet_id。
+**注意**：
+- docid 仅在创建时返回，需妥善保存。创建智能表格时默认包含一个子表，可通过 `smartsheet_get_sheet` 查询其 sheet_id。
+- 普通表格（在线表格，URL 含 `/sheet/`）本 skill **仅支持读取**（通过 `get_doc_content`），不支持创建
 
 参见 [API 详情](wecom-doc-create-doc.md)。
 
@@ -305,15 +315,19 @@ wecom-cli doc smartsheet_delete_records '{"docid": "DOCID", "sheet_id": "SHEETID
 
 ## 典型工作流
 
-> **关键提示**：读取内容前先看 URL 判断品类。`/doc/` 或 `/smartsheet/` → `get_doc_content`；`/smartpage/` → `smartpage_export_task`。只有用户明确提到「智能文档」或「智能主页」时才走 smartpage 流程，其他文档场景一律使用企微文档接口。
+> **关键提示**：读取内容前先看 URL 判断品类。`/doc/`、`/sheet/`、`/smartsheet/` → `get_doc_content`；`/smartpage/` → `smartpage_export_task`。只有用户明确提到「智能文档」或「智能主页」时才走 smartpage 流程，其他文档场景一律使用企微文档接口。
 
 ### 文档操作
 
-1. **读取文档** → 
+1. **读取文档 / 表格 / 智能表格** → 
 ```bash
 wecom-cli doc get_doc_content '{"docid": "DOCID", "type": 2}'
 ```
-，若 `task_done` 为 false 则携带 `task_id` 继续轮询
+   或通过 URL（`/doc/*`、`/sheet/*`、`/smartsheet/*` 均适用）：
+```bash
+wecom-cli doc get_doc_content '{"url": "https://doc.weixin.qq.com/sheet/xxx", "type": 2}'
+```
+   若 `task_done` 为 false 则携带 `task_id` 继续轮询
 2. **创建新文档** → 
 ```bash
 wecom-cli doc create_doc '{"doc_type": 3, "doc_name": "文档名"}'
