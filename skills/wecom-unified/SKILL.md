@@ -1,6 +1,6 @@
 ---
 name: wecom-unified
-description: "企业微信 CLI 全能套件，覆盖通讯录、消息、文档、日程、会议、待办 6 大业务域。支持按姓名/别名查找联系人、收发消息（文本/图片/文件/语音/视频）、读取/创建/编辑文档（可由'https://doc.weixin.qq.com/XXXX'链接触发）、读取表格（在线表格）内容、读写智能表格的子表/字段/记录、创建并导出智能文档、创建/修改/取消日程并查询闲忙、预约/管理会议、创建/跟踪/分派待办任务。即使用户未明确提到'企业微信'，只要消息中涉及doc.weixin.qq.com的url域名/消息/日程/待办/文档/表格/会议/找人等场景也应触发本技能"
+description: "企业微信 CLI 全能套件，覆盖通讯录、消息、文档、日程、会议、待办 6 大业务域。支持按姓名/别名查找联系人、收发消息（文本/图片/文件/语音/视频）、读取/创建/编辑文档（可由'https://doc.weixin.qq.com/XXXX'链接触发）、创建/读取/修改表格（在线表格）内容、追加行、增删子工作表、读写智能表格的子表/字段/记录、创建并导出智能文档、创建/修改/取消日程并查询闲忙、预约/管理会议、创建/跟踪/分派待办任务。即使用户未明确提到'企业微信'，只要消息中涉及doc.weixin.qq.com的url域名/消息/日程/待办/文档/表格/会议/找人等场景也应触发本技能"
 allowed-tools: Bash, Read
 ---
 
@@ -19,7 +19,7 @@ wecom-cli --version
 如果命令不存在或报错，执行安装：
 
 ```bash
-npm install -g @wecom/cli@0.1.8
+npm install -g @wecom/cli@0.1.9
 ```
 
 ### Step 2: 检查凭证是否配置
@@ -55,11 +55,29 @@ wecom-cli init --noninteractive
 
 → 详见 [references/wecom-msg.md](references/wecom-msg.md)
 
-### 📄 文档、表格、智能表格 & 智能文档 (doc)
+### 📄 文档 (doc)
 
-文档创建/读取/编辑（Markdown 格式），表格读取，智能表格子表管理、字段/列管理、记录增删改查，智能文档（智能主页）创建与内容导出。支持通过 docid 或 URL 定位文档，自动识别文档品类（文档/表格/智能表格/智能文档）并路由到正确接口。
+文档（`/doc/*`，doc_type=3）创建 / 读取 / 编辑，统一以 Markdown 格式交互。支持通过 docid 或 URL 定位。
 
 → 详见 [references/wecom-doc.md](references/wecom-doc.md)
+
+### 📊 表格 / 在线表格 (sheet)
+
+表格 / 在线表格（`/sheet/*`）的完整管理能力：新建空白表格、读取完整内容（Markdown 形式，异步轮询）、读取基础信息与子表列表、按区域修改单元格、末尾追加一行、增删子工作表。
+
+→ 详见 [references/wecom-sheet.md](references/wecom-sheet.md)
+
+### 📰 智能文档（智能主页） (smartpage)
+
+智能文档（`/smartpage/*`，原名「智能主页」）创建（基于本地 Markdown 文件、支持多子页面）与内容导出（异步两步）。仅当用户明确提到「智能文档」或「智能主页」时触发。
+
+→ 详见 [references/wecom-smartpage.md](references/wecom-smartpage.md)
+
+### 🧮 智能表格 (smartsheet)
+
+智能表格（`/smartsheet/*`，doc_type=10）创建，子表 / 字段（列） / 记录的增删改查，支持带图片或文件的记录写入与更新；写入受限时支持 Webhook 兜底。
+
+→ 详见 [references/wecom-smartsheet.md](references/wecom-smartsheet.md)
 
 ### 📅 日程 (schedule)
 
@@ -119,6 +137,42 @@ wecom-cli doc create_doc '{"doc_type": 3, "doc_name": "项目周报"}'
 
 ```bash
 wecom-cli doc get_doc_content '{"docid": "DOCID", "type": 2}'
+```
+
+### 新建在线表格（空白）
+
+```bash
+wecom-cli doc create_doc '{"doc_type": 4, "doc_name": "项目排期表"}'
+```
+
+### 读取在线表格基础信息（含子表 sheet_id）
+
+```bash
+wecom-cli doc sheet_get_info '{"docid": "DOCID"}'
+```
+
+### 修改在线表格指定区域内容
+
+```bash
+wecom-cli doc sheet_update_range_data '{"docid": "DOCID", "sheet_id": "SHEET_ID", "grid_data": {"start_row": 0, "start_column": 0, "rows": [{"values": [{"cell_value": {"text": "完成需求文档"}, "cell_format": {}}, {"cell_value": {"text": "张三"}, "cell_format": {}}]}]}}'
+```
+
+### 在线表格末尾追加一行
+
+```bash
+wecom-cli doc sheet_append_data '{"docid": "DOCID", "sheet_id": "SHEET_ID", "row": {"values": [{"cell_value": {"text": "新任务"}, "cell_format": {}}, {"cell_value": {"text": "李四"}, "cell_format": {}}]}}'
+```
+
+### 添加子工作表
+
+```bash
+wecom-cli doc sheet_add_sub '{"docid": "DOCID", "sheet": {"title": "新子表", "row_count": 100, "column_count": 26}, "index": 0}'
+```
+
+### 删除子工作表
+
+```bash
+wecom-cli doc sheet_delete_sub '{"docid": "DOCID", "sheet_id": "SHEET_ID"}'
 ```
 
 ### 创建智能文档（智能主页）
