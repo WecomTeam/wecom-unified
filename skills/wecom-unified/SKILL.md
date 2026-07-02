@@ -93,7 +93,7 @@ wecom-cli init --noninteractive
 
 ### ✅ 待办 (todo)
 
-查询待办列表与详情、创建/更新/删除待办、变更用户处理状态（接受/拒绝/完成）、分派任务。
+创建/更新/删除待办、获取待办列表与详情、按姓名搜索用户并分派参与人、更改参与人在待办中的状态（拒绝/接受/已完成）、设置截止时间和多种提醒方式。
 
 → 详见 [references/wecom-todo.md](references/wecom-todo.md)
 
@@ -210,5 +210,5 @@ wecom-cli todo get_todo_list '{}'
 ### 创建待办
 
 ```bash
-wecom-cli todo create_todo '{"content": "完成Q2规划文档", "remind_time": "2026-04-20 09:00:00"}'
+wecom-cli todo create_todo '{"content": "完成Q2规划文档", "follower_list": [{"follower_id": "zhangsan"}], "end_time": "2026-04-20 09:00:00", "remind_type_list": [4, 7]}'
 ```
