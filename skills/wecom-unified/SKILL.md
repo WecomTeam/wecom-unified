@@ -37,7 +37,7 @@ wecom-cli auth show --status
 ### Step 3: 配置凭证（仅未授权时执行）
 
 ```bash
-wecom-cli auth init
+wecom-cli auth init --noninteractive
 ```
 
 > ⚠️ 该命令会输出一个授权链接和二维码，并阻塞等待用户扫码完成验证。授权成功后命令会自动退出，仅需执行一次。
