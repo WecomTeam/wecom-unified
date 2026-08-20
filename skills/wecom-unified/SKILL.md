@@ -143,3 +143,10 @@ wecom-cli auth init --noninteractive
 基于已有媒体标识把文件下载到本地，或把已知本地路径的文件上传为可供消息、微盘等业务复用的媒体素材。媒体标识必须来自真实接口返回或用户明确提供，不能用 URL 代替；防泄漏加密链接也不能通过本域下载或解密。本域只负责文件搬运，不负责搜索素材，也不解析、识别文件内容。
 
 → 详见 [references/wecomcli-media.md](references/wecomcli-media.md)
+
+### 🗨️ 群聊会话 (chat)
+
+按时间范围分页列出机器人所在、近期有消息的群聊会话，并拉取指定会话在 7 天窗口内的消息记录。仅读取、不发送；发送走消息域。当前 `groups list` 仅支持群聊，单聊消息可按对方 `userid` 直接经 `messages list` 拉取。受 7 天时间窗限制；主动回溯历史或 bot 不在的群会触发企业权限限制（未开通「会话内容存档」时返回 `853006`）。
+
+→ 详见 [references/wecomcli-chat.md](references/wecomcli-chat.md)
+
