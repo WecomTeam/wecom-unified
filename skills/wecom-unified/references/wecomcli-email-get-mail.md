@@ -39,7 +39,8 @@ wecom-cli mail get --json '{"mail_ids": ["<mail_id>"]}'
         {"attach_url": "<ATTACH_URL>", "name": "微盘文件名", "size": 45678}  // attach_url 与 media_id 互斥：微盘等无法上传 COS 的附件仅返回 attach_url
       ],
       "inline_images": [
-        {"media_id": "<IMG_MEDIA_ID_1>", "content_id": "<CID_1>"}
+        {"media_id": "<IMG_MEDIA_ID_1>", "content_id": "<CID_1>"},
+        {"image_name": "图片1", "image_url": "<IMG_URL_1>"} // image_url 与 media_id 互斥：防泄漏等无法上传 COS 的图片仅返回 image_url 与 image_name
       ],
       "calendar_info": [
         {
@@ -115,16 +116,27 @@ wecom-cli mail get --json '{"mail_ids": ["<mail_id>"]}'
 
 ## 处理内嵌图片（如有）
 
-如果返回的 `inline_images` 非空，邮件正文（Markdown）里通常有 `![](cid:<content_id>)` 的占位符引用。处理原则：
+如果返回的 `inline_images` 非空，其中每一项有两种**互斥**形态，需按实际字段分两个分支处理：
 
-1. **查看图片内容时**，先用 `wecomcli-media.md` 的 `media download` 接口基于 `media_id` 下载到本地拿到 `file_path`
+### 分支一：`media_id` + `content_id`（可解析）
+
+邮件正文（Markdown）里通常有 `![](cid:<content_id>)` 的占位符引用。处理原则：
+
+1. **查看图片内容时**，先用 `wecomcli-media.md` 的 `media download` 接口基于 `media_id` 下载到本地拿到 `file_path`，再读取该文件内容
 2. **处理正文中的 `cid` 占位符**：在正文 Markdown 中找到包含该项 `content_id` 值的图片引用（如 `![](cid:xxx)` 或 `[![](cid:xxx)](url)`），在向用户展示正文前**必须移除或替换**为图片的文字描述，**严禁**把 `![](cid:xxx)` 形式的占位符原样输出给用户
 
 > 发送侧和读取侧的内嵌图片占位符字段名都是 `content_id`。读取时按接口返回的 `content_id` 值在正文中匹配对应的图片引用即可。
->
-> **防泄漏场景**：若 `inline_images` 为空但正文中包含指向 `work.weixin.qq.com/filepreview/security/` 的链接，说明图片以加密链接形式直接嵌在正文里，参见下方"防泄漏场景处理"章节。
->
+
 > **注意**：不要外显 `![](cid:xxx)`（含 `[![](cid:xxx)](url)` 形式）。它是邮件 MIME 内部引用，不是有效的 Markdown 图片链接。
+
+### 分支二：`image_name` + `image_url`（不可解析，直接展示）
+
+该形态与 `media_id` 互斥（防泄漏等无法上传 COS 的图片仅返回 `image_url` 与 `image_name`）。Agent **无法解析** `image_url` 的内容，处理方式与防泄漏场景一致：
+
+1. **直接以 Markdown 链接语法 `[<image_name>](<image_url>)` 形式展示给用户**，让用户查看，**严禁**调用任何工具尝试下载或解析（`media download` 只接受 `media_id`，传 URL 会直接报错），**严禁**编造图片内容
+2. **严禁**用文字描述代替链接（如"含1张内联图片"）——这样用户无法点击查看
+
+> 展示方式与下方"防泄漏场景处理"章节一致，防泄漏只是本形态的一种典型来源。
 
 ## 防泄漏场景处理（加密链接形式的图片和附件）
 
@@ -132,35 +144,41 @@ wecom-cli mail get --json '{"mail_ids": ["<mail_id>"]}'
 
 ### 识别特征
 
-- `inline_images` 和/或 `attachments` 数组为空或不存在
-- 但正文 Markdown 中包含指向 `work.weixin.qq.com/filepreview/security/...` 的 URL：
-  - **图片**：`![](https://work.weixin.qq.com/filepreview/security/s?k=...)` 形式
+满足以下任一情况即为防泄漏资源：
+
+- `inline_images` 项返回 `image_name` + `image_url`（与 `media_id` 互斥），且 `image_url` 指向 `work.weixin.qq.com/filepreview/security/...`
+- `inline_images` 和/或 `attachments` 数组为空或不存在，但正文 Markdown 中包含指向 `work.weixin.qq.com/filepreview/security/...` 的 URL：
+  - **图片**：`[图片](https://work.weixin.qq.com/filepreview/security/s?k=...)` 形式
   - **附件**：`[文件名](https://work.weixin.qq.com/filepreview/security/s?k=...)` 形式的链接，链接文本包含文件名和文件大小
 
 ### 处理方式
 
 防泄漏链接是加密的、与用户身份绑定的，Agent **无法直接下载或解密**，只能引导用户自行查看：
 
-1. **内联图片**：正文包含指向加密 URL 的 Markdown 图片引用，**直接保留并输出**，让用户点击即可跳转。**严禁**用文字描述代替链接（如"含1张内联图片"、"包含内联图片，通过安全链接展示"）——这样用户无法点击查看
+1. **内联图片**：
+   - 若来自 `inline_images` 的 `image_name` + `image_url`，以 `[<image_name>](<image_url>)` 链接语法形式输出
+   - 若为正文中指向加密 URL 的 Markdown 图片引用，**直接保留并输出**
+   - 两者都让用户点击即可跳转。**严禁**用文字描述代替链接（如"含1张内联图片"、"包含内联图片，通过安全链接展示"）——这样用户无法点击查看
 2. **附件**：正文包含指向加密 URL 的 Markdown 链接（含文件名和文件大小），须按 wecomcli-email.md「邮件详情格式说明」的附件表格输出
 3. **正文文本**：去除签名分隔线、邮件客户端标识（"发自我的企业微信"）等装饰元素后，正常展示给用户
 
 
 ### 与常规场景的兼容
 
-处理邮件内容时，按以下优先级判断图片和附件的处理方式：
+处理邮件内容时，按以下规则逐项判断图片和附件的处理方式：
 
-1. **`inline_images`/`attachments` 非空** → 走常规 `media_id` 流程（通过 `wecomcli-media.md` 的 `media download` 接口下载到本地后通过 `file_path` 读取内容）
-2. **数组为空或不存在，但正文 Markdown 含 `work.weixin.qq.com/filepreview/security/` 链接** → 走防泄漏链接展示流程（保留链接展示给用户，引导用户自行点击查看）
+1. **`inline_images` 或 `attachments` 含 `media_id`** → 走常规解析流程（通过 `wecomcli-media.md` 的 `media download` 接口下载到本地后通过 `file_path` 读取内容）
+2. **`inline_images` 项含 `image_name` + `image_url`，或数组为空但正文 Markdown 含 `work.weixin.qq.com/filepreview/security/` 链接** → 走链接展示流程（以 `[<image_name>](<image_url>)` 展示给用户，不调用工具解析）
 3. **两者都没有** → 该邮件确实没有图片/附件
 
-> 同一封邮件中两种形式不会混合出现：要么全部走 `media_id`，要么全部走加密链接。因此不需要处理"一部分图片有 `media_id`、另一部分是加密 URL"的情况。
+> `inline_images` 单项中的 `media_id` 与 `image_name` + `image_url` **互斥**：含 `media_id` 的项可解析，含 `image_url` 的项不可解析、只能展示，按实际返回字段选择处理分支即可。
 
 
 ## 关键注意点
 
 - **正文为 `content` 或 `file_path` 二选一**：`content` 非空时直接使用该字段内容（Markdown 格式字符串）；`file_path` 读取该路径的 Markdown 文件获取正文
-- **附件和内嵌图片统一走 `media download`**：`media_id` 先通过 `wecomcli-media.md` 的 `media download` 接口下载到本地拿 `file_path`，再通过 `file_path` 读取内容；不要把下载后的本地路径展示给用户
+- **含 `media_id` 的附件和内嵌图片才走 `media download`**：`media_id` 先通过 `wecomcli-media.md` 的 `media download` 接口下载到本地拿 `file_path`，再通过 `file_path` 读取内容；不要把下载后的本地路径展示给用户。附件的 `attach_url` 与内嵌图的 `image_url` 都**不能**传给 `media download`（只接受 `media_id`），以链接形式展示给用户即可
+- **`image_url` 用链接语法展示**：内嵌图返回 `image_name` + `image_url` 时，以 `[<image_name>](<image_url>)` 链接语法形式展示，严禁调用工具解析或编造图片内容
 - **`cid` 占位符必须处理**：正文中的 `![](cid:xxx)`（含 `[![](cid:xxx)](url)` 形式）是 MIME 内部引用，严禁原样外显。
 - **对用户不可见的字段**：`mail_id`、`media_id`、`content_id`、`has_more`、`next_cursor` 都是内部流转字段，不要直接展示
 - 对于提供了模糊人名的查询，优先通过 `wecomcli-contact.md` 搜索并获取完整信息（含 `mail` 字段）再传参

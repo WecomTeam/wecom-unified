@@ -119,8 +119,8 @@
   - **附件**列：含 `attach_url` 或防泄漏加密 URL 的附件必须写成 `[<文件名>](<URL>)` 的 Markdown 链接，严禁丢链接只留文件名；常规 `media_id` 附件填纯文件名。
   - **大小**列：人类可读大小（如 `1.2 MB`）。
   - **说明**列：一句话简短说明，可用文件名/正文线索、查看方式提示等，无线索时留空。
-- **防泄漏内联图片**：正文含 `work.weixin.qq.com/filepreview/security/...` 加密 URL 的内联图片时，加密 URL 必须以 Markdown 超链接形式嵌入正文，不得隐藏或概括为"含内联图片"
-- 详细的防泄漏字段解析规则见 [get-mail](wecomcli-email-get-mail.md)
+- **不可解析内联图片**：`inline_images[].image_url` 存在时（无论是否为 `work.weixin.qq.com/filepreview/security/...` 防泄漏 URL），或正文含该类防泄漏 URL 时，都无法解析，必须以 Markdown 链接语法 `[<image_name>](<image_url>)`嵌入正文；优先使用 `inline_images[].image_name` 作为图片名
+- 详细的内嵌图片与防泄漏解析规则见 [get-mail](wecomcli-email-get-mail.md)
 
 ### 邮件发送预览（发送 / 回复 / 转发前必备）
 
@@ -196,7 +196,7 @@
 
 - **收件人 userid 兜底**：通过 `wecomcli-contact.md` 查询收件人时，优先取其邮箱填入 `to.emails`；**若该用户没有邮箱，则使用其 `userid` 填入 `to.userids` 尝试投递**。不得以"没有邮箱"为由直接拒绝发送/回复/转发
 - **回复收件人不查通讯录**：回复时直接使用原邮件接口返回的 `sender.email`，不再通过 `wecomcli-contact.md` 按人名查询（通讯录模糊搜索可能匹配到同音不同字的人，导致发错）
-- **查看附件/内嵌图必须用 `wecomcli-media.md` 的 `media download` 接口**：处理邮件中的图片（png/jpg/gif 等）和文档附件时，先基于 `media_id` 调用 `media download` 下载到本地拿到 `file_path`，再读取其内容；解析结果用于回答，**不要把 `media_id` 或本地路径展示给用户**
+- **查看附件/内嵌图必须用 `wecomcli-media.md` 的 `media download` 接口**：含 `media_id` 时基于 `media_id` 调用 `media download` 下载到本地拿到 `file_path` 再读取内容；含 `image_url` 时不调用任何工具解析，只以 `[<image_name>](<image_url>)` 链接形式展示。解析结果用于回答时，**不要把 `media_id` 或本地路径展示给用户**
 - **发送本地附件/内嵌图不需要手动上传**：`attachments` / `inline_images` 的每一项直接填 `file_path`，CLI 会自动完成上传，**不要**为了拿 `media_id` 而额外调用 `wecomcli-media.md`；仅当已有现成 `media_id`（用户提供或其他接口返回）时才优先复用 `media_id`，且 `media_id` 必须来自接口真实返回值，禁止自行构造
 
 ## 平台限制
