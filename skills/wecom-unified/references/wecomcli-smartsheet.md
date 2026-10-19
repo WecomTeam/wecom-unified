@@ -24,7 +24,8 @@
 
 ### 易混淆场景路由
 
-- 用户明确指定 `在线表格` 或链接含 `/sheet/` → 转交 `wecomcli-sheet.md` 
+- 用户明确指定 `在线表格` 或链接含 `/sheet/` → 转交 `wecomcli-sheet.md`
+- 用户提供或要求处理本地 `.xlsx` / `.xlsm` / `.xls` / `.csv` / `.tsv` 文件，且未明确要求导入或创建为智能表格 → 转交 `wecomcli-sheet.md`
 
 ## 安全约束
 
