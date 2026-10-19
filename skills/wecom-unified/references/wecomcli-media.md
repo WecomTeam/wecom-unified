@@ -52,7 +52,7 @@ wecom-cli media download --json '{"media_id": "MEDIA_ID"}'
 **命令**
 
 ```bash
-wecom-cli media upload --json '{"file_path": "/tmp/example.pdf"}'
+wecom-cli media upload --json '{"file_path": "/tmp/example.pdf", "type": "file"}'
 ```
 
 **入参**
@@ -60,6 +60,42 @@ wecom-cli media upload --json '{"file_path": "/tmp/example.pdf"}'
 | 字段 | 类型 | 必填 | 说明 |
 |---|---|:----:|---|
 | `file_path` | string | 是 | 需要上传的文件的本地路径 |
+| `type` | string | 条件必填 | 媒体类型：`image` / `voice` / `video` / `file`。素材用于消息发送时必须显式传入，并与后续消息的 `msg_type` 一致 |
+
+**按用途选择上传类型**
+
+不要依赖 CLI 根据文件扩展名自动判断媒体类型。应先根据下游用途确定 `type`，再上传素材：
+
+| 下游用途 | `type` | 示例文件 |
+|---|---|---|
+| 图片消息 | `image` | PNG / JPG 图片 |
+| 文件消息或微盘文件 | `file` | PDF / DOCX / XLSX 等普通文件 |
+| 语音消息 | `voice` | 有效的 AMR 语音文件 |
+| 视频消息 | `video` | MP4 等视频文件 |
+
+图片上传：
+
+```bash
+wecom-cli media upload --json '{"file_path": "/tmp/example.png", "type": "image"}'
+```
+
+普通文件上传：
+
+```bash
+wecom-cli media upload --json '{"file_path": "/tmp/example.pdf", "type": "file"}'
+```
+
+语音上传：
+
+```bash
+wecom-cli media upload --json '{"file_path": "/tmp/example.amr", "type": "voice"}'
+```
+
+视频上传：
+
+```bash
+wecom-cli media upload --json '{"file_path": "/tmp/example.mp4", "type": "video"}'
+```
 
 **返回**
 
@@ -72,6 +108,8 @@ wecom-cli media upload --json '{"file_path": "/tmp/example.pdf"}'
 ## 关键约束
 
 - **`media_id` / `file_path` 不得编造**：`media_id` 必须来自上传结果、其他技能返回或用户明确提供；`file_path` 必须是真实存在的本地路径。两者都没有时用自然语言追问，禁止靠猜测凑一个。
+- **上传类型必须匹配下游用途**：素材用于消息发送时，上传请求必须显式传入 `type`，且与后续消息的 `msg_type` 一致。图片用 `image`、文件用 `file`、语音用 `voice`、视频用 `video`；不要省略 `type` 或仅凭文件扩展名期待 CLI 自动推断。
+- **语音文件必须是真实 AMR**：`type=voice` 仅支持有效的 AMR 文件，不能通过修改扩展名把其他音频格式伪装成 AMR。
 - **不做内容解析**：本 skill 只负责文件的下载落地与上传，`download` 拿到 `file_path` 后如需查看内容，直接通过 `file_path` 读取，不在本 skill 职责范围内。
 - **内部 ID 不外露**：`media_id` 仅用于后续接口调用，禁止直接展示给用户；下载后的本地 `file_path` 同样不展示给用户。
 - **CLI 报错原样转达**：命令返回明确错误码时如实告知用户并给替代建议，禁止用 curl / python 等通用手段绕过 CLI 强行完成。
